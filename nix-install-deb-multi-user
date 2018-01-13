@@ -72,6 +72,7 @@ if ! getent group nixbld; then
 	    nixbld$n; done
 fi
 
+# They've released 1.11.16 by now. Use that instead. Also, do a checksum.
 wget "https://nixos.org/releases/nix/nix-1.11.2/nix-1.11.2.tar.xz" -P "$tmpDir"
 cd "$tmpDir"
 tar -xvf nix-1.11.2.tar.xz
@@ -80,6 +81,7 @@ cd "nix-1.11.2/"
 make -j $(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
 make install
 
+# Can we just use this file instead? https://github.com/NixOS/nix/blob/master/misc/systemd/nix-daemon.service.in
 $(cat > "/etc/systemd/system/nix.service" <<'END_HEREDOC'
 [Unit]
 Description=Nix daemon
