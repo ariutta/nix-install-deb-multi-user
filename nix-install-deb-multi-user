@@ -58,11 +58,41 @@ fi
 # bison and flex
 
 apt-get -y update
+#apt-get -y install build-essential \
+#	pkg-config \
+#	autotools-dev \
+#	dh-autoreconf \
+#	libssl-dev \
+#	libbz2-dev \
+#	libsqlite3-dev \
+#	libcurl4-openssl-dev \
+#	liblzma-dev \
+#	libgc-dev \
+#	libdbi-perl \
+#	libdbd-sqlite3-perl \
+#	libwww-curl-perl \
+#	libxml2 \
+#	libxslt-dev \
+#	systemd;
 apt-get -y install build-essential \
-	pkg-config autotools-dev dh-autoreconf libssl-dev libbz2-dev \
-	libsqlite3-dev libcurl4-openssl-dev liblzma-dev libgc-dev \
-	libdbi-perl libdbd-sqlite3-perl libwww-curl-perl libxml2 libxslt-dev \
-	systemd;
+	pkg-config \
+	autotools-dev \
+	dh-autoreconf \
+	libssl-dev \
+	libbz2-dev \
+	libsqlite3-dev \
+	libcurl4-openssl-dev \
+	liblzma-dev \
+	libgc-dev \
+	libdbi-perl \
+	libdbd-sqlite3-perl \
+	libwww-curl-perl \
+	libxml2 \
+	libxslt-dev \
+	libseccomp-dev;
+	# should we install this?
+	#systemd;
+
 
 # Create daemon
 if ! getent group nixbld; then
@@ -72,11 +102,13 @@ if ! getent group nixbld; then
 	    nixbld$n; done
 fi
 
-# They've released 1.11.16 by now. Use that instead. Also, do a checksum.
-wget "https://nixos.org/releases/nix/nix-1.11.2/nix-1.11.2.tar.xz" -P "$tmpDir"
-cd "$tmpDir"
-tar -xvf nix-1.11.2.tar.xz
-cd "nix-1.11.2/"
+VERSION="1.11.16"
+SHA256SUM="0ca5782fc37d62238d13a620a7b4bff6a200bab1bd63003709249a776162357c";
+wget "https://nixos.org/releases/nix/nix-$VERSION/nix-$VERSION.tar.xz" -P "$tmpDir";
+cd "$tmpDir";
+echo "$SHA256SUM  nix-$VERSION.tar.xz" | shasum -a 256 -c -;
+tar -xvf "nix-$VERSION.tar.xz";
+cd "nix-$VERSION/";
 ./configure --enable-gc
 make -j $(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
 make install
@@ -203,5 +235,5 @@ nix-daemon service is running.
 nix-daemon service set to init on system start.
 
 To setup nix for user jdoe, run:
-  sudo -i su -c nix-setup-user jdoe
+  sudo -i su -c "nix-setup-user jdoe"
 END_HEREDOC
