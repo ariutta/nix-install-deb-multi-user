@@ -1,11 +1,18 @@
-# nix-install: Perform a multi-user installation of Nix on a Debian systems
+# Multi-user install script for Nix on Debian
+
+[Nix](https://nixos.org/nix/) has a nice install script for NixOS and macOS, but it doesn't have one for Debian systems.
 
 ## Install
 
 ```sh
+git clone https://github.com/ariutta/nix-install-deb-multi-user.git
 cd nix-install-deb-multi-user
 sudo -i su -c $(pwd)/nix-install-deb-multi-user
 ```
+
+## Related
+
+* [nixos-in-place](https://github.com/jeaye/nixos-in-place): Install NixOS on top of any existing Linux distribution without rebooting
 
 ## TODO
 
