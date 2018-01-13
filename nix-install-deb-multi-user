@@ -23,7 +23,7 @@ trap cleanup EXIT INT QUIT TERM
 # see https://stackoverflow.com/a/24067243/5354298
 version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 # see https://stackoverflow.com/questions/592620/check-if-a-program-exists-from-a-bash-script
-check_installed() { hash $1 2>/dev/null || { echo >&2 "I require $1 but it's not installed. Aborting. See https://nixos.org/nix/manual/#sec-prerequisites-source."; exit 1; } }
+check_installed() { hash "$1" 2>/dev/null || { echo >&2 "I require $1 but it's not installed. Aborting. See https://nixos.org/nix/manual/#sec-prerequisites-source."; exit 1; } }
 
 echo "Performing a multi-user installation of Nix..."
 
@@ -43,7 +43,7 @@ check_installed wget;
 check_installed which clang ? clang : gcc
 
 PERL_VERSION=$(perl --version | grep -oP "\d+\.\d+")
-if version_gt "5.8" $PERL_VERSION; then
+if version_gt "5.8" "$PERL_VERSION"; then
 	cat >&2 <<'END_HEREDOC'
 Error: missing Perl >= 5.8.
 See https://nixos.org/nix/manual/#sec-prerequisites-source.
@@ -72,8 +72,8 @@ if ! getent group nixbld; then
 	    nixbld$n; done
 fi
 
-wget "https://nixos.org/releases/nix/nix-1.11.2/nix-1.11.2.tar.xz" -P $tmpDir
-cd $tmpDir
+wget "https://nixos.org/releases/nix/nix-1.11.2/nix-1.11.2.tar.xz" -P "$tmpDir"
+cd "$tmpDir"
 tar -xvf nix-1.11.2.tar.xz
 cd "nix-1.11.2/"
 ./configure --enable-gc
@@ -94,6 +94,7 @@ KillMode=process
 WantedBy=multi-user.target
 END_HEREDOC
 )
+chmod 751 "/etc/systemd/system/nix.service"
 
 touch /etc/default/nix
 # TODO getting a warning or error about /etc/init.d/nix being missing.
