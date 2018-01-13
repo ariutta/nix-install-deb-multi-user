@@ -97,11 +97,36 @@ END_HEREDOC
 chmod 751 "/etc/systemd/system/nix.service"
 
 touch /etc/default/nix
-# TODO getting a warning or error about /etc/init.d/nix being missing.
+
+# TODO what do we need to do, if anything, about "/etc/init.d/nix"?
 # Should I need to create this?
-# If so, should it be something like this: https://gist.github.com/therealpxc/c23137278462f303d2a3#file-nix-daemon-init-sh
-# Or maybe it's one of the files from install.log, like misc/upstart/nix-daemon.conf ?
-touch /etc/init.d/nix
+# If so, should it be something like this:
+# https://gist.github.com/therealpxc/c23137278462f303d2a3#file-nix-daemon-init-sh
+# or this:
+# https://github.com/NixOS/nix/blob/master/misc/systemv/nix-daemon
+$(cat > "/etc/init.d/nix" <<'END_HEREDOC'
+#!/bin/sh
+# kFreeBSD do not accept scripts as interpreters, using #!/bin/sh and sourcing.
+if [ true != "$INIT_D_SCRIPT_SOURCED" ] ; then
+    set "$0" "$@"; INIT_D_SCRIPT_SOURCED=true . /lib/init/init-d-script
+fi
+
+### BEGIN INIT INFO
+# Provides:          nix-daemon
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Starts and stops the Nix daemon
+# Description:       This is a daemon which enable the multi-user mode 
+#                     of the Nix package manager.
+### END INIT INFO
+
+DESC="nix-daemon"
+DAEMON=/usr/local/bin/nix-daemon
+END_HEREDOC
+)
+chmod 751 /etc/init.d/nix
 
 systemctl enable nix
 systemctl start nix
