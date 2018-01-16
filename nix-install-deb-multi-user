@@ -183,7 +183,7 @@ fi
 . "$HOME/.profile"
 
 # Add channels and update
-nix-channel --add https://nixos.org/channels/nixos-17.09
+nix-channel --add https://nixos.org/channels/nixos-17.09 nixos
 nix-channel --add https://nixos.org/channels/nixpkgs-unstable
 nix-channel --update
 
@@ -199,27 +199,31 @@ SETUP_USER_SCRIPT_PATH="/usr/local/bin/nix-setup-user"
 $(cat > "$SETUP_USER_SCRIPT_PATH" <<'END_HEREDOC'
 # NOTE: this is only for setting up non-root users.
 TARGET_USER="$1"
-
-adduser "$TARGET_USER" nix-users
-
 SYMLINK_PATH="/home/$TARGET_USER/.nix-profile"
 PROFILE_DIR="/nix/var/nix/profiles/per-user/$TARGET_USER"
+
+adduser "$TARGET_USER" nix-users
 
 echo "Creating profile $PROFILE_DIR..."
 echo "Profile symlink: $SYMLINK_PATH"
 
-rm "$SYMLINK_PATH"
+if [ -e "$SYMLINK_PATH" ]; then rm "$SYMLINK_PATH"; fi
 mkdir -p "$PROFILE_DIR"
-chown "$TARGET_USER" "$PROFILE_DIR"
+chown "$TARGET_USER:$TARGET_USER" "$PROFILE_DIR"
 
 ln -s "$PROFILE_DIR/profile" "$SYMLINK_PATH"
-chown -h "$TARGET_USER" "$SYMLINK_PATH"
+chown -h "$TARGET_USER:$TARGET_USER" "$SYMLINK_PATH"
 
 touch "/home/$TARGET_USER/.profile"
+echo "" >> "/home/$TARGET_USER/.profile"
+echo "Added by nix-setup-user" >> "/home/$TARGET_USER/.profile"
 echo "export NIX_REMOTE=daemon" >> "/home/$TARGET_USER/.profile"
 echo "if [ -e /usr/local/etc/profile.d/nix.sh ]; then . /usr/local/etc/profile.d/nix.sh; fi" >> "/home/$TARGET_USER/.profile"
 
 su -lc "cd; . /usr/local/etc/profile.d/nix.sh; NIX_REMOTE=daemon nix-channel --update" "$TARGET_USER"
+nix-channel --add https://nixos.org/channels/nixos-17.09 nixos
+nix-channel --add https://nixos.org/channels/nixpkgs-unstable
+nix-channel --update
 END_HEREDOC
 )
 
