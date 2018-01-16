@@ -198,11 +198,19 @@ fi
 SETUP_USER_SCRIPT_PATH="/usr/local/bin/nix-setup-user"
 $(cat > "$SETUP_USER_SCRIPT_PATH" <<'END_HEREDOC'
 # NOTE: this is only for setting up non-root users.
+if [ $(id -u) != 0 ]; then
+   echo "This script requires root permissions"
+   sudo "$0" "$@"
+   exit
+fi
+
 TARGET_USER="$1"
-SYMLINK_PATH="/home/$TARGET_USER/.nix-profile"
-PROFILE_DIR="/nix/var/nix/profiles/per-user/$TARGET_USER"
+TARGET_USER_HOME="/home/$TARGET_USER"
 
 adduser "$TARGET_USER" nix-users
+
+SYMLINK_PATH="$TARGET_USER_HOME/.nix-profile"
+PROFILE_DIR="/nix/var/nix/profiles/per-user/$TARGET_USER"
 
 echo "Creating profile $PROFILE_DIR..."
 echo "Profile symlink: $SYMLINK_PATH"
@@ -214,16 +222,15 @@ chown "$TARGET_USER:$TARGET_USER" "$PROFILE_DIR"
 ln -s "$PROFILE_DIR/profile" "$SYMLINK_PATH"
 chown -h "$TARGET_USER:$TARGET_USER" "$SYMLINK_PATH"
 
-touch "/home/$TARGET_USER/.profile"
-echo "" >> "/home/$TARGET_USER/.profile"
-echo "Added by nix-setup-user" >> "/home/$TARGET_USER/.profile"
-echo "export NIX_REMOTE=daemon" >> "/home/$TARGET_USER/.profile"
-echo "if [ -e /usr/local/etc/profile.d/nix.sh ]; then . /usr/local/etc/profile.d/nix.sh; fi" >> "/home/$TARGET_USER/.profile"
+touch "$TARGET_USER_HOME/.profile"
+echo "" >> "$TARGET_USER_HOME/.profile"
+echo "# Added by nix-setup-user" >> "$TARGET_USER_HOME/.profile"
+echo "export NIX_PATH=\"$HOME/.nix-defexpr/channels\"" >> "$TARGET_USER_HOME/.profile"
+echo "export NIX_REMOTE=daemon" >> "$TARGET_USER_HOME/.profile"
+echo "if [ -e \"/usr/local/etc/profile.d/nix.sh\" ]; then . \"/usr/local/etc/profile.d/nix.sh\"; fi" >> "$TARGET_USER_HOME/.profile"
+echo "if [ -e \"$HOME/.nix-profile/etc/profile.d/nix.sh\" ]; then . \"$HOME/.nix-profile/etc/profile.d/nix.sh\"; fi" >> "$TARGET_USER_HOME/.profile"
 
-su -lc "cd; . /usr/local/etc/profile.d/nix.sh; NIX_REMOTE=daemon nix-channel --update" "$TARGET_USER"
-nix-channel --add https://nixos.org/channels/nixos-17.09 nixos
-nix-channel --add https://nixos.org/channels/nixpkgs-unstable
-nix-channel --update
+su -lc "cd; . \"$HOME/.profile\"; nix-channel --add https://nixos.org/channels/nixos-17.09 nixos; nix-channel --update" "$TARGET_USER"
 END_HEREDOC
 )
 
@@ -239,5 +246,5 @@ nix-daemon service is running.
 nix-daemon service set to init on system start.
 
 To setup nix for user jdoe, run:
-  sudo -i su -c "nix-setup-user jdoe"
+  "nix-setup-user jdoe"
 END_HEREDOC
