@@ -174,10 +174,10 @@ touch "$HOME/.profile";
 if ! cat "$HOME/.profile" | grep 'added by Nix installer'; then
 	$(cat >> "$HOME/.profile" <<'END_HEREDOC'
 # added by Nix installer
-export NIX_PATH=$HOME/.nix-defexpr/channels
 export NIX_REMOTE=daemon
-if [ -e /usr/local/etc/profile.d/nix.sh ]; then . /usr/local/etc/profile.d/nix.sh; fi
-if [ -e /root/.nix-profile/etc/profile.d/nix.sh ]; then . /root/.nix-profile/etc/profile.d/nix.sh; fi
+if [ -e "/usr/local/etc/profile.d/nix.sh" ]; then . "/usr/local/etc/profile.d/nix.sh"; fi
+if [ -e "$HOME/.nix-channels" ]; then export NIX_PATH=`cat "$HOME/.nix-channels" | sed -e "s~\(.*\)\ \(.*\)~\2=$HOME/.nix-defexpr/channels/\2~g" | paste -sd ":" -`; fi
+if [ -e "/root/.nix-profile/etc/profile.d/nix.sh" ]; then . "/root/.nix-profile/etc/profile.d/nix.sh"; fi
 END_HEREDOC
 )
 fi
@@ -229,8 +229,10 @@ echo "" >> "$TARGET_USER_HOME/.profile"
 echo "# Added by nix-setup-user" >> "$TARGET_USER_HOME/.profile"
 echo "export NIX_REMOTE=daemon" >> "$TARGET_USER_HOME/.profile"
 echo "if [ -e \"/usr/local/etc/profile.d/nix.sh\" ]; then . \"/usr/local/etc/profile.d/nix.sh\"; fi" >> "$TARGET_USER_HOME/.profile"
-echo "export NIX_PATH=`cat $HOME/.nix-channels | sed -e "s~\(.*\)\ \(.*\)~\2=$HOME/.nix-defexpr/channels/\2~g" | paste -sd ":" -`;" >> "$TARGET_USER_HOME/.profile"
+echo "if [ -e \"$HOME/.nix-channels\" ]; then export NIX_PATH=`cat \"$HOME/.nix-channels\" | sed -e \"s~\(.*\)\ \(.*\)~\2=$HOME/.nix-defexpr/channels/\2~g\" | paste -sd \":\" -`; fi" >> "$TARGET_USER_HOME/.profile"
 echo "if [ -e \"$HOME/.nix-profile/etc/profile.d/nix.sh\" ]; then . \"$HOME/.nix-profile/etc/profile.d/nix.sh\"; fi" >> "$TARGET_USER_HOME/.profile"
+echo "# Make Nix packages installed as root available to all users" >> "$TARGET_USER_HOME/.profile"
+echo "if [ -e \"/nix/var/nix/profiles/default/bin\" ]; then PATH=\"$PATH:/nix/var/nix/profiles/default/bin\"; fi" >> "$TARGET_USER_HOME/.profile"
 
 su -lc "cd; . \"$HOME/.profile\"; nix-channel --add https://nixos.org/channels/nixos-NIXPKGS_VERSION_PLACEHOLDER nixos; nix-channel --update" "$TARGET_USER"
 END_HEREDOC
