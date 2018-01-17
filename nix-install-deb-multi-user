@@ -102,13 +102,14 @@ if ! getent group nixbld; then
 	    nixbld$n; done
 fi
 
-VERSION="1.11.16"
+NIXPKGS_VERSION="17.09"
+NIX_VERSION="1.11.16"
 SHA256SUM="0ca5782fc37d62238d13a620a7b4bff6a200bab1bd63003709249a776162357c";
-wget "https://nixos.org/releases/nix/nix-$VERSION/nix-$VERSION.tar.xz" -P "$tmpDir";
+wget "https://nixos.org/releases/nix/nix-$NIX_VERSION/nix-$NIX_VERSION.tar.xz" -P "$tmpDir";
 cd "$tmpDir";
-echo "$SHA256SUM  nix-$VERSION.tar.xz" | shasum -a 256 -c -;
-tar -xvf "nix-$VERSION.tar.xz";
-cd "nix-$VERSION/";
+echo "$SHA256SUM  nix-$NIX_VERSION.tar.xz" | shasum -a 256 -c -;
+tar -xvf "nix-$NIX_VERSION.tar.xz";
+cd "nix-$NIX_VERSION/";
 ./configure --enable-gc
 make -j $(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
 make install
@@ -183,8 +184,8 @@ fi
 . "$HOME/.profile"
 
 # Add channels and update
-nix-channel --add https://nixos.org/channels/nixos-17.09 nixos
-nix-channel --add https://nixos.org/channels/nixpkgs-unstable
+nix-channel --add "https://nixos.org/channels/nixos-$NIXPKGS_VERSION" nixos
+nix-channel --add "https://nixos.org/channels/nixpkgs-unstable"
 nix-channel --update
 
 # Restrict access to Nix operations to root and a group called nix-users:
@@ -195,6 +196,7 @@ if ! getent group "nix-users"; then
 fi
 
 # Add a script called nix-setup-user to PATH.
+# NOTE: Using sed to replace "NIXPKGS_VERSION_PLACEHOLDER" in script below with actual value.
 SETUP_USER_SCRIPT_PATH="/usr/local/bin/nix-setup-user"
 $(cat > "$SETUP_USER_SCRIPT_PATH" <<'END_HEREDOC'
 # NOTE: this is only for setting up non-root users.
@@ -225,14 +227,17 @@ chown -h "$TARGET_USER:$TARGET_USER" "$SYMLINK_PATH"
 touch "$TARGET_USER_HOME/.profile"
 echo "" >> "$TARGET_USER_HOME/.profile"
 echo "# Added by nix-setup-user" >> "$TARGET_USER_HOME/.profile"
-echo "export NIX_PATH=\"$HOME/.nix-defexpr/channels\"" >> "$TARGET_USER_HOME/.profile"
 echo "export NIX_REMOTE=daemon" >> "$TARGET_USER_HOME/.profile"
 echo "if [ -e \"/usr/local/etc/profile.d/nix.sh\" ]; then . \"/usr/local/etc/profile.d/nix.sh\"; fi" >> "$TARGET_USER_HOME/.profile"
+echo "export NIX_PATH=`cat $HOME/.nix-channels | sed -e "s~\(.*\)\ \(.*\)~\2=$HOME/.nix-defexpr/channels/\2~g" | paste -sd ":" -`;" >> "$TARGET_USER_HOME/.profile"
 echo "if [ -e \"$HOME/.nix-profile/etc/profile.d/nix.sh\" ]; then . \"$HOME/.nix-profile/etc/profile.d/nix.sh\"; fi" >> "$TARGET_USER_HOME/.profile"
 
-su -lc "cd; . \"$HOME/.profile\"; nix-channel --add https://nixos.org/channels/nixos-17.09 nixos; nix-channel --update" "$TARGET_USER"
+su -lc "cd; . \"$HOME/.profile\"; nix-channel --add https://nixos.org/channels/nixos-NIXPKGS_VERSION_PLACEHOLDER nixos; nix-channel --update" "$TARGET_USER"
 END_HEREDOC
 )
+# This is a kludge, but we disabled variable substitution in the HERE_DOC above,
+# so we need to use this to set NIXPKGS_VERSION_PLACEHOLDER to its correct value.
+sed -i "s/NIXPKGS_VERSION_PLACEHOLDER/$NIXPKGS_VERSION/g" "$SETUP_USER_SCRIPT_PATH"
 
 chmod u+rwx "$SETUP_USER_SCRIPT_PATH"
 chmod g+rx-w "$SETUP_USER_SCRIPT_PATH"
