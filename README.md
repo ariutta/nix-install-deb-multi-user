@@ -4,10 +4,24 @@
 
 ## Install
 
+Maybe this works now? `sh <(curl https://nixos.org/nix/install) --daemon`
+
+If not, try this:
+
 ```sh
 git clone https://github.com/ariutta/nix-install-deb-multi-user.git
 cd nix-install-deb-multi-user
 sudo -i su -c $(pwd)/nix-install-deb-multi-user
+```
+
+## Not enough space
+
+If not enough space is allocated for /nix. you can get around this problem by taking these steps before installing:
+
+```
+sudo mkdir -p /nix
+sudo mkdir -p /home/wikipathways/nix # pick any location with enough space
+sudo mount -o bind /home/wikipathways/nix /nix # use the same location as above
 ```
 
 ## Related

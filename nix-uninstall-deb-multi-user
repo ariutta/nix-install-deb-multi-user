@@ -22,12 +22,14 @@ fi
 
 # Remove daemon
 if getent group nixbld; then
-	for n in $(seq 1 10); do userdel -r "nixbld$n"; done
+	for nixbld_user in $(less /etc/passwd | awk -F: '{ print $1 }' | grep -E '^nixbld[0-9]+'); do
+		userdel -r $nixbld_user;
+	done
 	groupdel nixbld
 fi
 
 # Removing daemon and system-wide Nix stuff
-rm -rf "/nix" "/etc/systemd/system/nix.service" "/etc/default/nix" "/etc/init.d/nix" "/usr/local/etc/profile.d/nix.sh"
+rm -rf "/nix" "/etc/systemd/system/nix.service" "/etc/default/nix" "/etc/init.d/nix" "/usr/local/etc/profile.d/nix.sh*" "/etc/profile.d/nix.sh*"
 # Removing root's Nix stuff, but not stuff for any other user, because it's
 # expected no one else will create this stuff for root, but it's not safe
 # to assume we can delete it for other users.

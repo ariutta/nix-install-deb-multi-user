@@ -14,6 +14,10 @@
 
 set -e
 
+NIXPKGS_VERSION="17.09"
+NIX_VERSION="1.11.16"
+SHA256SUM="0ca5782fc37d62238d13a620a7b4bff6a200bab1bd63003709249a776162357c";
+
 tmpDir=$(mktemp -d -t nix-binary-tarball-unpack.XXXXXXXXXX)
 cleanup() {
     rm -rf "$tmpDir"
@@ -102,9 +106,6 @@ if ! getent group nixbld; then
 	    nixbld$n; done
 fi
 
-NIXPKGS_VERSION="17.09"
-NIX_VERSION="1.11.16"
-SHA256SUM="0ca5782fc37d62238d13a620a7b4bff6a200bab1bd63003709249a776162357c";
 wget "https://nixos.org/releases/nix/nix-$NIX_VERSION/nix-$NIX_VERSION.tar.xz" -P "$tmpDir";
 cd "$tmpDir";
 echo "$SHA256SUM  nix-$NIX_VERSION.tar.xz" | shasum -a 256 -c -;
